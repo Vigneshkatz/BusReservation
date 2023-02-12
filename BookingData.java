@@ -12,8 +12,8 @@ import java.util.*;
 public class BookingData{
 	int busnumber=1;
 	String name="vignesh";
-//	SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-year");
 	Date date;
+	private String bookingNumber;
 	
 	
 	
@@ -43,21 +43,36 @@ public class BookingData{
 		
 		if(isAvailable())
 		{
-			String query = "Insert into booking(busNumber,name,date) values(?,?,?)";
+			String query = "Insert into booking(busNumber,name,date,bookingNumber) values(?,?,?,?)";
 			java.sql.Date sqlDate = new java.sql.Date(booking.date.getTime());
 			Connection c = DBconnection.getConnection();
 			PreparedStatement pst = c.prepareStatement(query);
 			pst.setInt(1, booking.busnumber);
 			pst.setString(2, booking.name);
 			pst.setDate(3, sqlDate);
+			pst.setString(4, bookingNumber(booking));
 			pst.executeUpdate();
-			System.out.println("Your booking is confirmed");
+			System.out.println("Your booking is confirmed and Your booking Number is "+ this.bookingNumber);
+			
 		}else {
 			System.out.println("Not able to book");
 		}
 		
 	}
-	public static void bookingInfo() throws SQLException {
+	private String bookingNumber(BookingData booking) {
+		
+		int randomNumber = (int)Math.random()*9999;
+		SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+		String dateString = formatter.format(date);
+		
+		String bookingNumber = randomNumber+"-" + dateString +"-"+ this.busnumber;
+		this.bookingNumber=bookingNumber;
+		return this.bookingNumber;
+		
+	}
+
+
+	public void bookingInfo() throws SQLException {
 		Connection c = DBconnection.getConnection();
 		Statement s = c.createStatement();
 		String query = "SELECT * FROM booking";
@@ -70,6 +85,39 @@ public class BookingData{
 					" Capacity "+r.getDate(4));
 		}
 		c.close();
+	}
+	public static void bookingInfo(String number) throws Exception{
+		Connection c = DBconnection.getConnection();
+		Statement s = c.createStatement();
+		String query = "SELECT * FROM booking WHERE bookingNumber = '"+number+"';";
+		ResultSet r = s.executeQuery(query);
+		System.out.println(query);
+		r.next();
 		
+			System.out.println("Bus number is "+r.getInt(2)+
+					" Ac "+r.getString(3)+
+					" Capacity "+r.getDate(4));
+		
+		c.close();
+	}
+	public static void cancelBooking(String number) throws Exception
+	{
+		
+		
+		Connection c = DBconnection.getConnection();
+		Statement s =c.createStatement();
+		String available = "SELECT count(*) FROM booking WHERE bookingNumber = '"+number+"';";
+		ResultSet r = s.executeQuery(available);
+		r.next();
+		
+		if(r.getInt(1) != 1)
+		{
+			System.out.println("No booking available with the booking number"+number);
+			return;
+		}
+		
+		String delete = "DELETE FROM booking WHERE bookingNumber = '"+number+"';";
+		bookingInfo(number);
+		s.executeUpdate(delete);
 	}
 }
